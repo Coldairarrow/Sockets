@@ -27,13 +27,13 @@ namespace Console_Server
             //处理新的客户端连接后的事件
             server.HandleNewClientConnected = new Action<SocketServer, SocketConnection>((theServer, theCon) =>
             {
-                Console.WriteLine($@"一个新的客户端接入，当前连接数：{theServer.ClientList.Count}");
+                Console.WriteLine($@"一个新的客户端接入，当前连接数：{theServer.GetConnectionCount()}");
             });
 
             //处理客户端连接关闭后的事件
             server.HandleClientClose = new Action<SocketConnection, SocketServer>((theCon, theServer) =>
             {
-                Console.WriteLine($@"一个客户端关闭，当前连接数为：{theServer.ClientList.Count}");
+                Console.WriteLine($@"一个客户端关闭，当前连接数为：{theServer.GetConnectionCount()}");
             });
 
             //处理异常

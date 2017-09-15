@@ -7,8 +7,8 @@
     <ProjectGuid>{5DF7AFDF-6B88-42AD-B855-4EB9BF0E2495}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>_01.Coldairarrow.Util.Sockets</RootNamespace>
-    <AssemblyName>01.Coldairarrow.Util.Sockets</AssemblyName>
+    <RootNamespace>Coldairarrow.Util.Sockets</RootNamespace>
+    <AssemblyName>Coldairarrow.Util.Sockets</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -20,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\Coldairarrow.Util.Sockets.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>

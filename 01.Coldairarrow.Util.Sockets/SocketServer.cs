@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Coldairarrow.Util.Sockets
 {
@@ -37,10 +39,10 @@ namespace Coldairarrow.Util.Sockets
 
         #region 内部成员
 
-        private Socket _socket = null;
-        private string _ip = "";
-        private int _port = 0;
-        private bool _isListen = true;
+        private Socket _socket { get; set; } = null;
+        private string _ip { get; set; } = "";
+        private int _port { get; set; } = 0;
+        private bool _isListen { get; set; } = true;
         private void StartListen()
         {
             try
@@ -55,7 +57,7 @@ namespace Coldairarrow.Util.Sockets
                         if (_isListen)
                             StartListen();
 
-                        SocketConnection newClient = new SocketConnection(newSocket, this)
+                        SocketConnection newConnection = new SocketConnection(newSocket, this)
                         {
                             HandleRecMsg = HandleRecMsg == null ? null : new Action<byte[], SocketConnection, SocketServer>(HandleRecMsg),
                             HandleClientClose = HandleClientClose == null ? null : new Action<SocketConnection, SocketServer>(HandleClientClose),
@@ -63,22 +65,22 @@ namespace Coldairarrow.Util.Sockets
                             HandleException = HandleException == null ? null : new Action<Exception>(HandleException)
                         };
 
-                        newClient.StartRecMsg();
-                        ClientList.AddLast(newClient);
-
-                        HandleNewClientConnected?.Invoke(this, newClient);
+                        newConnection.StartRecMsg();
+                        AddConnection(newConnection);
+                        HandleNewClientConnected?.BeginInvoke(this, newConnection, null, null);
                     }
                     catch (Exception ex)
                     {
-                        HandleException?.Invoke(ex);
+                        HandleException?.BeginInvoke(ex,null,null);
                     }
                 }, null);
             }
             catch (Exception ex)
             {
-                HandleException?.Invoke(ex);
+                HandleException?.BeginInvoke(ex,null,null);
             }
         }
+        private LinkedList<SocketConnection> _clientList { get; } = new LinkedList<SocketConnection>();
 
         #endregion
 
@@ -103,26 +105,102 @@ namespace Coldairarrow.Util.Sockets
                 _socket.Listen(int.MaxValue);
                 //开始监听客户端
                 StartListen();
-                HandleServerStarted?.Invoke(this);
+                HandleServerStarted?.BeginInvoke(this,null,null);
             }
             catch (Exception ex)
             {
-                HandleException?.Invoke(ex);
+                HandleException?.BeginInvoke(ex,null,null);
             }
         }
 
         /// <summary>
-        /// 所有连接的客户端列表
+        /// 维护客户端列表的读写锁
         /// </summary>
-        public LinkedList<SocketConnection> ClientList { get; set; } = new LinkedList<SocketConnection>();
+        public ReaderWriterLockSlim RWLock_ClientList { get; } = new ReaderWriterLockSlim();
 
         /// <summary>
         /// 关闭指定客户端连接
         /// </summary>
-        /// <param name="theClient">指定的客户端连接</param>
-        public void CloseClient(SocketConnection theClient)
+        /// <param name="theConnection">指定的客户端连接</param>
+        public void CloseConnection(SocketConnection theConnection)
         {
-            theClient.Close();
+            theConnection.Close();
+        }
+
+        /// <summary>
+        /// 添加客户端连接
+        /// </summary>
+        /// <param name="theConnection">需要添加的客户端连接</param>
+        public void AddConnection(SocketConnection theConnection)
+        {
+            RWLock_ClientList.EnterWriteLock();
+            _clientList.AddLast(theConnection);
+            RWLock_ClientList.ExitWriteLock();
+        }
+
+        /// <summary>
+        /// 删除指定的客户端连接
+        /// </summary>
+        /// <param name="theConnection">指定的客户端连接</param>
+        public void RemoveConnection(SocketConnection theConnection)
+        {
+            RWLock_ClientList.EnterWriteLock();
+            _clientList.Remove(theConnection);
+            RWLock_ClientList.ExitWriteLock();
+        }
+
+        /// <summary>
+        /// 通过条件获取客户端连接列表
+        /// </summary>
+        /// <param name="predicate">筛选条件</param>
+        /// <returns></returns>
+        public IEnumerable<SocketConnection> GetConnectionList(Func<SocketConnection,bool> predicate)
+        {
+            RWLock_ClientList.EnterReadLock();
+            var resList = _clientList.Where(predicate);
+            RWLock_ClientList.ExitReadLock();
+
+            return resList;
+        }
+
+        /// <summary>
+        /// 获取所有客户端连接列表
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<SocketConnection> GetConnectionList()
+        {
+            RWLock_ClientList.EnterReadLock();
+            var resList = _clientList;
+            RWLock_ClientList.ExitReadLock();
+
+            return resList;
+        }
+
+        /// <summary>
+        /// 寻找特定条件的客户端连接
+        /// </summary>
+        /// <param name="predicate">筛选条件</param>
+        /// <returns></returns>
+        public SocketConnection GetTheConnection(Func<SocketConnection, bool> predicate)
+        {
+            RWLock_ClientList.EnterReadLock();
+            var theConnection = _clientList.Where(predicate).FirstOrDefault();
+            RWLock_ClientList.ExitReadLock();
+
+            return theConnection;
+        }
+
+        /// <summary>
+        /// 获取客户端连接数
+        /// </summary>
+        /// <returns></returns>
+        public int GetConnectionCount()
+        {
+            RWLock_ClientList.EnterReadLock();
+            var count = _clientList.Count;
+            RWLock_ClientList.ExitReadLock();
+
+            return count;
         }
 
         #endregion

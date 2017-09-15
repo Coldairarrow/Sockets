@@ -10,7 +10,12 @@ namespace Coldairarrow.Util.Sockets
     public class SocketConnection
     {
         #region 构造函数
-
+        
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        /// <param name="socket">维护的Socket对象</param>
+        /// <param name="server">维护此连接的服务对象</param>
         public SocketConnection(Socket socket,SocketServer server)
         {
             _socket = socket;
@@ -62,21 +67,21 @@ namespace Coldairarrow.Util.Sockets
                             Array.Copy(container, 0, recBytes, 0, length);
 
                             //处理消息
-                            HandleRecMsg?.Invoke(recBytes, this, _server);
+                            HandleRecMsg?.BeginInvoke(recBytes, this, _server,null,null);
                         }
                         else
                             Close();
                     }
                     catch (Exception ex)
                     {
-                        HandleException?.Invoke(ex);
+                        HandleException?.BeginInvoke(ex,null,null);
                         Close();
                     }
                 }, null);
             }
             catch (Exception ex)
             {
-                HandleException?.Invoke(ex);
+                HandleException?.BeginInvoke(ex,null,null);
                 Close();
             }
         }
@@ -94,17 +99,17 @@ namespace Coldairarrow.Util.Sockets
                     try
                     {
                         int length = _socket.EndSend(asyncResult);
-                        HandleSendMsg?.Invoke(bytes, this, _server);
+                        HandleSendMsg?.BeginInvoke(bytes, this, _server,null,null);
                     }
                     catch (Exception ex)
                     {
-                        HandleException?.Invoke(ex);
+                        HandleException?.BeginInvoke(ex,null,null);
                     }
                 }, null);
             }
             catch (Exception ex)
             {
-                HandleException?.Invoke(ex);
+                HandleException?.BeginInvoke(ex,null,null);
             }
         }
 
@@ -141,15 +146,17 @@ namespace Coldairarrow.Util.Sockets
             {
                 _isRec = false;
                 _socket.Disconnect(false);
-                _server.ClientList.Remove(this);
-                HandleClientClose?.Invoke(this, _server);
-                _socket.Close();
-                _socket.Dispose();
-                GC.Collect();
+                _server.RemoveConnection(this);
+                HandleClientClose?.BeginInvoke(this, _server,null,null);
             }
             catch (Exception ex)
             {
-                HandleException?.Invoke(ex);
+                HandleException?.BeginInvoke(ex,null,null);
+            }
+            finally
+            {
+                _socket.Dispose();
+                GC.Collect();
             }
         }
 
