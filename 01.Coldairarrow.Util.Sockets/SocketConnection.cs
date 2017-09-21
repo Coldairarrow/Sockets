@@ -50,7 +50,7 @@ namespace Coldairarrow.Util.Sockets
         {
             try
             {
-                byte[] container = new byte[1024 * 1024 * 2];
+                byte[] container = new byte[1024 * 1024 * 4];
                 _socket.BeginReceive(container, 0, container.Length, SocketFlags.None, asyncResult =>
                 {
                     try
@@ -65,9 +65,15 @@ namespace Coldairarrow.Util.Sockets
                         {
                             byte[] recBytes = new byte[length];
                             Array.Copy(container, 0, recBytes, 0, length);
-
-                            //处理消息
-                            HandleRecMsg?.BeginInvoke(recBytes, this, _server,null,null);
+                            try
+                            {
+                                //处理消息
+                                HandleRecMsg?.BeginInvoke(recBytes, this, _server, null, null);
+                            }
+                            catch (Exception ex)
+                            {
+                                HandleException?.Invoke(ex);
+                            }
                         }
                         else
                             Close();

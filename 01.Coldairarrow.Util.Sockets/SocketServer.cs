@@ -71,13 +71,13 @@ namespace Coldairarrow.Util.Sockets
                     }
                     catch (Exception ex)
                     {
-                        HandleException?.BeginInvoke(ex,null,null);
+                        HandleException?.BeginInvoke(ex, null, null);
                     }
                 }, null);
             }
             catch (Exception ex)
             {
-                HandleException?.BeginInvoke(ex,null,null);
+                HandleException?.BeginInvoke(ex, null, null);
             }
         }
         private LinkedList<SocketConnection> _clientList { get; } = new LinkedList<SocketConnection>();
@@ -105,11 +105,11 @@ namespace Coldairarrow.Util.Sockets
                 _socket.Listen(int.MaxValue);
                 //开始监听客户端
                 StartListen();
-                HandleServerStarted?.BeginInvoke(this,null,null);
+                HandleServerStarted?.BeginInvoke(this, null, null);
             }
             catch (Exception ex)
             {
-                HandleException?.BeginInvoke(ex,null,null);
+                HandleException?.BeginInvoke(ex, null, null);
             }
         }
 
@@ -134,8 +134,14 @@ namespace Coldairarrow.Util.Sockets
         public void AddConnection(SocketConnection theConnection)
         {
             RWLock_ClientList.EnterWriteLock();
-            _clientList.AddLast(theConnection);
-            RWLock_ClientList.ExitWriteLock();
+            try
+            {
+                _clientList.AddLast(theConnection);
+            }
+            finally
+            {
+                RWLock_ClientList.ExitWriteLock();
+            }
         }
 
         /// <summary>
@@ -145,8 +151,14 @@ namespace Coldairarrow.Util.Sockets
         public void RemoveConnection(SocketConnection theConnection)
         {
             RWLock_ClientList.EnterWriteLock();
-            _clientList.Remove(theConnection);
-            RWLock_ClientList.ExitWriteLock();
+            try
+            {
+                _clientList.Remove(theConnection);
+            }
+            finally
+            {
+                RWLock_ClientList.ExitWriteLock();
+            }
         }
 
         /// <summary>
@@ -154,13 +166,17 @@ namespace Coldairarrow.Util.Sockets
         /// </summary>
         /// <param name="predicate">筛选条件</param>
         /// <returns></returns>
-        public IEnumerable<SocketConnection> GetConnectionList(Func<SocketConnection,bool> predicate)
+        public IEnumerable<SocketConnection> GetConnectionList(Func<SocketConnection, bool> predicate)
         {
             RWLock_ClientList.EnterReadLock();
-            var resList = _clientList.Where(predicate);
-            RWLock_ClientList.ExitReadLock();
-
-            return resList;
+            try
+            {
+                return _clientList.Where(predicate);
+            }
+            finally
+            {
+                RWLock_ClientList.ExitReadLock();
+            }
         }
 
         /// <summary>
@@ -169,11 +185,7 @@ namespace Coldairarrow.Util.Sockets
         /// <returns></returns>
         public IEnumerable<SocketConnection> GetConnectionList()
         {
-            RWLock_ClientList.EnterReadLock();
-            var resList = _clientList;
-            RWLock_ClientList.ExitReadLock();
-
-            return resList;
+            return _clientList;
         }
 
         /// <summary>
@@ -184,10 +196,14 @@ namespace Coldairarrow.Util.Sockets
         public SocketConnection GetTheConnection(Func<SocketConnection, bool> predicate)
         {
             RWLock_ClientList.EnterReadLock();
-            var theConnection = _clientList.Where(predicate).FirstOrDefault();
-            RWLock_ClientList.ExitReadLock();
-
-            return theConnection;
+            try
+            {
+                return _clientList.Where(predicate).FirstOrDefault();
+            }
+            finally
+            {
+                RWLock_ClientList.ExitReadLock();
+            }
         }
 
         /// <summary>
@@ -197,10 +213,14 @@ namespace Coldairarrow.Util.Sockets
         public int GetConnectionCount()
         {
             RWLock_ClientList.EnterReadLock();
-            var count = _clientList.Count;
-            RWLock_ClientList.ExitReadLock();
-
-            return count;
+            try
+            {
+                return _clientList.Count;
+            }
+            finally
+            {
+                RWLock_ClientList.ExitReadLock();
+            }
         }
 
         #endregion
