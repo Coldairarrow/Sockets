@@ -37,7 +37,13 @@ client.Send("OK!");//默认UTF-8编码格式发送字符串，有重载方法，
 
 事件处理：<br/>
 客户端连接到服务端之后，双方肯定要进行通信，也就是收发数据，这里我只讲最常用的事件<br/>
-1、服务端接收到客户端发送的消息时触发<br/>
+1、新的客户端连接到服务端时触发（可以选择这个时候给对应的SocketConnection传入身份标识Property）<br/>
+server.HandleNewClientConnected = new Action<SocketServer, SocketConnection>((theServer,theCon) =><br/>
+{<br/>
+  theCon.Property = "Admin";//身份标志，也可以传别的对象,自己定义，用的时候强制转下（不懂，百度：多态）<br/>
+  Console.WriteLine($@"当前连接数：{theServer.GetConnectionCount()}");<br/>
+});<br/>
+2、服务端接收到客户端发送的消息时触发<br/>
 //bytes为收到的数据（字节数组），client为对应的SocketConnection,theServer为维护连接的服务对象<br/>
 server.HandleRecMsg = new Action<byte[], SocketConnection, SocketServer>((bytes,client,theServer)=> <br/>
 {
@@ -45,7 +51,7 @@ server.HandleRecMsg = new Action<byte[], SocketConnection, SocketServer>((bytes,
    client.Send($"服务端已收到收到消息:{msg}");<br/>
    Console.WriteLine($"收到消息:{msg}");<br/>
 });<br/>
-2、客户端端接收到客户端发送的消息时触发<br/>
+3、客户端端接收到客户端发送的消息时触发<br/>
 client.HandleRecMsg = new Action<byte[], SocketClient>((bytes, theClient) =><br/>
 {<br/>
   string msg = Encoding.UTF8.GetString(bytes);<br/>
